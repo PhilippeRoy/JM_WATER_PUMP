@@ -145,7 +145,7 @@ void setup()
   minim = new Minim(this);
   JM_Tune = new AudioPlayer[20];
 
-  JM_Tune[currentSong] = minim.loadFile("Roy_Orbison_-_Crying.mp3", 1024);
+  JM_Tune[currentSong] = minim.loadFile("song.mp3", 1024);
 
   // loop the file
   // calculate the averages by grouping frequency bands linearly. use 30 averages.
