@@ -30,18 +30,31 @@ int OFF = 0;
 int servo1Direction;
 
 
-//Message Variables
-int pump1;
 
 //Timers
-Timer timer;
+
+Timer[] timer;
 
 
 //Pump Variables
-int pump1TriggerValue;
+
 int musicAverageValueMapped;
-boolean timerlock = false;
-int TempPumpDurationValue = 0;
+boolean[] timerlock = { 
+  false, false, false, false, false
+};
+int[] TempPumpDurationValue = { 
+  0, 0, 0, 0, 0
+};
+
+int[] pump1TriggerValue = new int[5];
+int[] pump1DurationValue = new int [5];
+int[] curentPumpDurationValue = new int [5];
+
+int whichTimer;
+
+//Message Variables
+int pump1TriggerValueMessenger = ON;
+
 void setup() 
 {
   size(1200, 500);  //Screen Size
@@ -72,15 +85,15 @@ void setup()
    **                                                                                  **
    *************************************************************************************/
 
-  cp5 = new ControlP5[16];
+  cp5 = new ControlP5[15];
 
-  for (int i = 1; i < 16; i++) {
+  for (int i = 0; i < 15; i++) {
     cp5[i] = new ControlP5(this);
   }  
 
   //for (int i = 1; i < 4; i++) {
 
-  checkbox = cp5[1].addCheckBox("checkBox")
+  checkbox = cp5[0].addCheckBox("checkBox")
     .setPosition(372, 212)
       .setColorForeground(color(120))
         .setColorActive(color(255))
@@ -97,10 +110,10 @@ void setup()
                               ;
   // }
 
-  for (int i = 1; i < 6; i++) {
+  for (int i = 0; i < 5; i++) {
 
     cp5[i].addTextfield("Trigger"+i)
-      .setPosition(210, 170+(i*40))
+      .setPosition(210, 210+(i*40))
         .setSize(40, 20)
           .setFont(fontSmaller)
             .setLabelVisible(false)
@@ -108,8 +121,8 @@ void setup()
 
               ;
 
-    cp5[5+i].addTextfield("Duration"+i)
-      .setPosition(290, 170+(i*40))
+    cp5[4+i].addTextfield("Duration"+i)
+      .setPosition(290, 210+(i*40))
         .setSize(40, 20)
           .setFont(fontSmaller)
             .setLabelVisible(false)
@@ -118,7 +131,10 @@ void setup()
               ;
   }
 
-  timer = new Timer();
+  timer = new Timer[10];
+  for (int i = 0; i < 10; i++) {
+    timer[i] = new Timer();
+  }
 }
 
 void draw() {
@@ -218,9 +234,7 @@ void draw() {
   rect(0, audioAverageHeight, 200, audioAverageHeight - fftLin.getAvg(0)*20);
 
   float musicAverage = ( fftLin.getAvg(0));
-
-  musicAverageValueMapped = int(map(musicAverage, 0, 10, 0, 255 ));
-  //println( musicAverageValueMapped);//map this number
+  musicAverageValueMapped = int(map(musicAverage, 0, 10, 0, 255 )); // the mapped average music level
 
   /*************************************************************************************
    **                                                                                  **
@@ -286,47 +300,81 @@ void checkBox(float[] a) {
  *************************************************************************************/
 
 void pump1logic() {
-  int pump1TriggerValue = int(cp5[1].get(Textfield.class, "Trigger"+1).getText());
-  int pump1DurationValue = int(cp5[6].get(Textfield.class, "Duration"+1).getText());
+  for (int i = 0; i < 5; i++) {
+    pump1TriggerValue[i] = int(cp5[i].get(Textfield.class, "Trigger"+i).getText());
+    pump1DurationValue[i] = int(cp5[4+i].get(Textfield.class, "Duration"+i).getText());
 
-  int curentPumpDurationValue = pump1DurationValue;
-  
-  if(timerlock){
-  
-  TempPumpDurationValue = TempPumpDurationValue;
-  }else{
-  
-  TempPumpDurationValue = curentPumpDurationValue;
-  
+
+    curentPumpDurationValue[i] = pump1DurationValue[i];
+
+    if (timerlock[i]) {
+
+      TempPumpDurationValue[i] = TempPumpDurationValue[i];
+    }
+    else {
+      TempPumpDurationValue[i] = curentPumpDurationValue[i];
+    }
+
+    //check to see if timer is on
+    if (!timerlock[i]) {
+      //check to see if row is active
+      if ((int)checkbox.getArrayValue()[i] == 1) {
+        //check to see if tigger has activated
+        if (musicAverageValueMapped >= pump1TriggerValue[i]) {
+          timer[i].start(TempPumpDurationValue[i]);
+          timerlock[i] = true;
+        }
+      }
+    }
+    if (timer[i].isFinished()) {
+      timerlock[i] = false;
+    }
+
+    //print pump value
+    if ( timerlock[i] && timer[i].hasStarted() ) {
+
+      //pump1TriggerValueMessenger = whichTimer;
+      //println(pump1TriggerValueMessenger);
+      pushStyle();
+      fill(0, 255, 0);
+      text("ON ", 300, 30);
+      //println("Pump Value");
+      popStyle();
+      //    }else{
+      //    
+      //    pushStyle();
+      //      fill(255,0,0);
+      //      text("OFF ", 300, 30);
+      //      //println("Pump Value");
+      //      popStyle();
+      //    }
+
+      if ((int)checkbox.getArrayValue()[i] == 0) {
+
+        timerlock[i] = false;
+      }
+    }
+    //println("1");
+    //println(musicAverageValueMapped + " , " + TempPumpDurationValue[0] + " , " + curentPumpDurationValue[0] + " , " + timerlock[0] + " , " + timer[0].hasStarted());
   }
-  //check to see if timer is on
-  if (!timerlock) {
-    //check to see if row is active
-    if ((int)checkbox.getArrayValue()[0] == 1) {
-      //check to see if tigger has activated
-      if (musicAverageValueMapped >= pump1TriggerValue) {
-        timer.start(TempPumpDurationValue);
-        timerlock = true;
+}
+void checkWhichTimerToUse() {
+  int highestValue = 0;
+  int tempValue = 0;
+  //loop
+  for (int i = 0; i < 5; i++) {
+    (if ((int)checkbox.getArrayValue()[i] == 1) {
+      tempValue = pump1TriggerValue[i];
+    }
+
+    if ( tempValue > highestValue) {
+
+      highestValue = tempValue;
+      if (highestValue == tempValue) {
+        //capture i
+        whichTimer = i;
       }
     }
   }
-  if (timer.isFinished()) {
-    timerlock = false;
-  }
-
-//print pump value
-  if ( timerlock && timer.hasStarted() ) {
-    //println("Pump Value");
-  }
-  
-  if ((int)checkbox.getArrayValue()[0] == 0) {
-  
-  timerlock = false;
-
-  }
-  
-//println("1");
-  println(musicAverageValueMapped + " , " + TempPumpDurationValue + " , " + curentPumpDurationValue + " , " + timerlock + " , " + timer.hasStarted());
-  
 }
 
