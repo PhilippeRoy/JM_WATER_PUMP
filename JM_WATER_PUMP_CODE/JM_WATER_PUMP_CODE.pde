@@ -29,6 +29,19 @@ int ON = 1;
 int OFF = 0;
 int servo1Direction;
 
+
+//Message Variables
+int pump1;
+
+//Timers
+Timer timer;
+
+
+//Pump Variables
+int pump1TriggerValue;
+int musicAverageValueMapped;
+boolean timerlock = false;
+int TempPumpDurationValue = 0;
 void setup() 
 {
   size(1200, 500);  //Screen Size
@@ -41,7 +54,7 @@ void setup()
 
   //Audio Setup
   minim = new Minim(this);
-  JM_Tune = minim.loadFile("song.mp3", 1024);
+  JM_Tune = minim.loadFile("2-10 You & Me (feat. Eliza Doolittle) [Flume Remix].mp3", 1024);
   // loop the file
   JM_Tune.loop();
   // calculate the averages by grouping frequency bands linearly. use 30 averages.
@@ -104,6 +117,8 @@ void setup()
 
               ;
   }
+
+  timer = new Timer();
 }
 
 void draw() {
@@ -204,7 +219,7 @@ void draw() {
 
   float musicAverage = ( fftLin.getAvg(0));
 
-  int musicAverageValueMapped = int(map(musicAverage, 0, 10, 0, 255 ));
+  musicAverageValueMapped = int(map(musicAverage, 0, 10, 0, 255 ));
   //println( musicAverageValueMapped);//map this number
 
   /*************************************************************************************
@@ -216,8 +231,7 @@ void draw() {
   fill(musicAverageValueMapped);
   rect (0, 441, 200, 500);
   popStyle();
-
-  //  text(cp5[1].get(Textfield.class, "input").getText(), 360, 130);
+  pump1logic();
 }
 
 
@@ -238,22 +252,21 @@ void controlEvent(ControlEvent theEvent) {
 
 
   if (theEvent.isFrom(checkbox)) {
-    if((int)checkbox.getArrayValue()[0] == 1){
-    
-    }
-    
-println((int)checkbox.getArrayValue()[0]);
+    //    if ((int)checkbox.getArrayValue()[1] == 1) {
+    //      timer.start();
+    //    
+    //    }
 
-//    print("got an event from "+checkbox.getName()+"\t\n");
-//    // checkbox uses arrayValue to store the state of 
-//    // individual checkbox-items. usage:
-//    println(checkbox.getArrayValue());
-//    int col = 0;
-//    for (int i=0;i<checkbox.getArrayValue().length;i++) {
-//      int n = (int)checkbox.getArrayValue()[i];
-//      print(n);
-//    }
-//    println();
+    //    print("got an event from "+checkbox.getName()+"\t\n");
+    //    // checkbox uses arrayValue to store the state of 
+    //    // individual checkbox-items. usage:
+    //    println(checkbox.getArrayValue());
+    //    int col = 0;
+    //    for (int i=0;i<checkbox.getArrayValue().length;i++) {
+    //      int n = (int)checkbox.getArrayValue()[i];
+    //      print(n);
+    //    }
+    //    println();
   }
 }
 
@@ -268,13 +281,52 @@ void checkBox(float[] a) {
 }
 /*************************************************************************************
  **                                                                                  **
- **                               Text Logic                                         **
+ **                               Program Logic                                      **
  **                                                                                  **
  *************************************************************************************/
- 
-void checkCheckBoxes (){
-println(checkbox.getArrayValue()[1]);
 
+void pump1logic() {
+  int pump1TriggerValue = int(cp5[1].get(Textfield.class, "Trigger"+1).getText());
+  int pump1DurationValue = int(cp5[6].get(Textfield.class, "Duration"+1).getText());
 
+  int curentPumpDurationValue = pump1DurationValue;
+  
+  if(timerlock){
+  
+  TempPumpDurationValue = TempPumpDurationValue;
+  }else{
+  
+  TempPumpDurationValue = curentPumpDurationValue;
+  
+  }
+  //check to see if timer is on
+  if (!timerlock) {
+    //check to see if row is active
+    if ((int)checkbox.getArrayValue()[0] == 1) {
+      //check to see if tigger has activated
+      if (musicAverageValueMapped >= pump1TriggerValue) {
+        timer.start(TempPumpDurationValue);
+        timerlock = true;
+      }
+    }
+  }
+  if (timer.isFinished()) {
+    timerlock = false;
+  }
+
+//print pump value
+  if ( timerlock && timer.hasStarted() ) {
+    //println("Pump Value");
+  }
+  
+  if ((int)checkbox.getArrayValue()[0] == 0) {
+  
+  timerlock = false;
+
+  }
+  
+//println("1");
+  println(musicAverageValueMapped + " , " + TempPumpDurationValue + " , " + curentPumpDurationValue + " , " + timerlock + " , " + timer.hasStarted());
+  
 }
- 
+
