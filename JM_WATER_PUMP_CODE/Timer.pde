@@ -6,22 +6,24 @@
 
 class Timer {
 
-  int savedTime = 1000000000; // When Timer started
+  int savedTime = 0; // When Timer started
   int totalTime; // How long Timer should last
-
-  Timer() {
+  int returnTime;
+  
+    Timer() {
   }
 
   // Starting the timer
 
- void start(int tempTotalTime) {
+    void start(int tempTotalTime) {
     totalTime = tempTotalTime;
     // When the timer starts it stores the current time in milliseconds.
-    savedTime = second();
+    savedTime = millis();
+    //  print(millis() + " , ");
   }
   boolean hasStarted() { 
     // Check how much time has passed
-    if (second() > savedTime) {
+    if (millis() > savedTime) {
       return true;
     } 
     else {
@@ -32,13 +34,20 @@ class Timer {
   // The work of the timer is farmed out to this method.
   boolean isFinished() { 
     // Check how much time has passed
-    int passedTime = second()- savedTime;
+    int passedTime = millis() - savedTime;
+    //println(abs(passedTime));
     if (passedTime > totalTime) {
       return true;
     } 
     else {
       return false;
     }
+  }
+
+  int timeLeft() {
+    int adjustTime = (totalTime/1000)-((millis()/1000) - (savedTime/1000))  ;
+    returnTime = adjustTime;
+    return returnTime;
   }
 }
 
